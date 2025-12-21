@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login'])->name('login');
+Route::post('/demande-anonyme', [DemandeController::class, 'storeAnonyme']);
 
 // Protected routes (require Sanctum authentication)
 Route::middleware('auth:sanctum')->group(function () {

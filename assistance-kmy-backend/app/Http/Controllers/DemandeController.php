@@ -68,6 +68,40 @@ class DemandeController extends Controller
     }
 
     /**
+     * Store a new SOS demande (Anonymous)
+     */
+    public function storeAnonyme(Request $request)
+    {
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255',
+            'prenom' => 'required|string|max:255',
+            'telephone' => 'required|string|max:20',
+            'adresse' => 'required|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+        ]);
+
+        $demande = Demande::create([
+            'user_id' => null,
+            'nom' => $validated['nom'],
+            'prenom' => $validated['prenom'],
+            'telephone' => $validated['telephone'],
+            'adresse' => $validated['adresse'],
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'status' => 'pending',
+        ]);
+
+        // TODO: Send notification to admin (Firebase/Twilio)
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Demande SOS anonyme envoyée avec succès',
+            'demande' => $demande,
+        ], 201);
+    }
+
+    /**
      * Display the specified demande
      */
     public function show(Request $request, $id)

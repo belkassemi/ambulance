@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Assistance KMY - Emergency Ambulance System
 
 > Complete emergency ambulance request and tracking system with Laravel backend and React Native mobile application.
