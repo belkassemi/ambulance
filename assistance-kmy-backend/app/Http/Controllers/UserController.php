@@ -84,4 +84,30 @@ class UserController extends Controller
             'message' => 'Déconnexion réussie',
         ]);
     }
+
+    /**
+     * Forgot password (simulate sending code)
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun utilisateur trouvé avec cet email.',
+            ], 404);
+        }
+
+        // In a real app, you would generate a code and send an email here.
+        // For now, we simulate success.
+        return response()->json([
+            'success' => true,
+            'message' => 'Un code de réinitialisation a été envoyé à votre adresse email.',
+        ]);
+    }
 }

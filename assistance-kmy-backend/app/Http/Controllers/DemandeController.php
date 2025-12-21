@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Demande;
+use App\Models\User;
+use App\Notifications\NewSosNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class DemandeController extends Controller
 {
@@ -57,8 +60,9 @@ class DemandeController extends Controller
             'status' => 'pending',
         ]);
 
-        // TODO: Send notification to admin (Firebase/Twilio)
-        // This would be implemented with your notification service
+        // Send notification to all admins
+        $admins = User::where('role', 'admin')->get();
+        Notification::send($admins, new NewSosNotification($demande));
         
         return response()->json([
             'success' => true,
@@ -66,40 +70,66 @@ class DemandeController extends Controller
             'demande' => $demande,
         ], 201);
     }
-
-    /**
-     * Store a new SOS demande (Anonymous)
-     */
-    public function storeAnonyme(Request $request)
-    {
+/**
+ * Store a new anonymous SOS demande (no authentication required)
+ */
+public function storeAnonyme(Request $request)
+{
+    try {
         $validated = $request->validate([
-            'nom' => 'required|string|max:255',
-            'prenom' => 'required|string|max:255',
-            'telephone' => 'required|string|max:20',
-            'adresse' => 'required|string',
+            'nom'      => 'required|string|max:255',
+            'prenom'   => 'required|string|max:255',
+            'telephone'=> 'required|string|max:20',
+            'adresse'  => 'required|string|max:500',
             'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
+            'longitude'=> 'nullable|numeric|between:-180,180',
         ]);
 
         $demande = Demande::create([
-            'user_id' => null,
-            'nom' => $validated['nom'],
-            'prenom' => $validated['prenom'],
+            'user_id'   => null, // anonymous
+            'nom'       => $validated['nom'],
+            'prenom'    => $validated['prenom'],
             'telephone' => $validated['telephone'],
-            'adresse' => $validated['adresse'],
-            'latitude' => $validated['latitude'] ?? null,
+            'adresse'   => $validated['adresse'],
+            'latitude'  => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
-            'status' => 'pending',
+            'status'    => 'pending',
         ]);
 
-        // TODO: Send notification to admin (Firebase/Twilio)
-        
+        // Send notification to all admins
+        $admins = User::where('role', 'admin')->get();
+        Notification::send($admins, new NewSosNotification($demande));
+
         return response()->json([
             'success' => true,
-            'message' => 'Demande SOS anonyme envoyée avec succès',
-            'demande' => $demande,
+            'message' => 'Demande SOS anonyme envoyée avec succès. Une ambulance a été alertée.',
+            'demande' => [
+                'id'        => $demande->id,
+                'nom'       => $demande->nom,
+                'prenom'    => $demande->prenom,
+                'telephone' => $demande->telephone,
+                'adresse'   => $demande->adresse,
+                'status'    => $demande->status,
+                'created_at'=> $demande->created_at->format('Y-m-d H:i:s'),
+            ],
         ], 201);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Données invalides',
+            'errors'  => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        // Log the error for debugging
+        \Log::error('Anonymous SOS request failed: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Une erreur est survenue lors de l\'envoi de la demande. Veuillez réessayer.',
+        ], 500);
     }
+}
 
     /**
      * Display the specified demande
@@ -139,16 +169,40 @@ class DemandeController extends Controller
             'status' => 'required|in:pending,accepted,done',
         ]);
 
-        $demande = Demande::findOrFail($id);
+        $demande = Demande::find($id);
+
+        if (!$demande) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Demande non trouvée (ID: ' . $id . ')',
+            ], 404);
+        }
         $demande->status = $validated['status'];
         $demande->save();
 
-        // TODO: Send notification to user about status change
-        
         return response()->json([
             'success' => true,
             'message' => 'Statut mis à jour avec succès',
             'demande' => $demande,
+        ]);
+    }
+
+    /**
+     * Delete a demande (Admin only)
+     */
+    public function destroy(Request $request, $id)
+    {
+        $demande = Demande::findOrFail($id);
+
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $demande->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Demande supprimée avec succès',
         ]);
     }
 }

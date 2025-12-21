@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login'])->name('login');
 Route::post('/demande-anonyme', [DemandeController::class, 'storeAnonyme']);
+Route::post('/forgot-password', [UserController::class, 'forgotPassword']);
 
 // Protected routes (require Sanctum authentication)
 Route::middleware('auth:sanctum')->group(function () {
@@ -32,4 +33,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/demande', [DemandeController::class, 'store']);
     Route::get('/demandes/{id}', [DemandeController::class, 'show']);
     Route::patch('/demandes/{id}/status', [DemandeController::class, 'updateStatus']);
+    Route::delete('/demandes/{id}', [DemandeController::class, 'destroy']);
 });
