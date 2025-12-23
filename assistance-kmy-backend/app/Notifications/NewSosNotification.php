@@ -33,4 +33,16 @@ class NewSosNotification extends Notification
                 'type' => 'new_sos',
             ]);
     }
+
+    public function toArray($notifiable)
+    {
+        return [
+            'demande_id' => $this->demande->id,
+            'prenom' => $this->demande->prenom,
+            'nom' => $this->demande->nom,
+            'telephone' => $this->demande->telephone,
+            'adresse' => $this->demande->adresse,
+            'type' => 'new_sos',
+        ];
+    }
 }

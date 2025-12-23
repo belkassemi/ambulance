@@ -61,8 +61,12 @@ class DemandeController extends Controller
         ]);
 
         // Send notification to all admins
-        $admins = User::where('role', 'admin')->get();
-        Notification::send($admins, new NewSosNotification($demande));
+        try {
+            $admins = User::where('role', 'admin')->get();
+            Notification::send($admins, new NewSosNotification($demande));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send SOS notification: ' . $e->getMessage());
+        }
         
         return response()->json([
             'success' => true,
@@ -97,8 +101,12 @@ public function storeAnonyme(Request $request)
         ]);
 
         // Send notification to all admins
-        $admins = User::where('role', 'admin')->get();
-        Notification::send($admins, new NewSosNotification($demande));
+        try {
+            $admins = User::where('role', 'admin')->get();
+            Notification::send($admins, new NewSosNotification($demande));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send anonymous SOS notification: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
